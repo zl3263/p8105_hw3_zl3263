@@ -9,10 +9,15 @@ date: "2022-10-12"
 ```{r}
 library(tidyverse)
 library(p8105.datasets)
+library(rnoaa)
 data("instacart")
-head(instacart)
+data("ny_noaa")
+
 ```
 ### Problem 1
+```{r}
+head(instacart)
+```
 
 The dataset records the order information of instacart website. It has `r nrow(instacart)` rows and `r ncol(instacart)`columns. It has 15 variables containing information like the order id , product id, product names etc. Each row records one product in an order and relevent information both on the order and the product like the date of the order and the department of the product. 
 
@@ -63,13 +68,77 @@ head(accelerometer_forplot)
 accelerometer_forplot$day = factor(accelerometer_forplot$day, 
                                    levels = rev(c('Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday')))
 
-#why single panel！single panel cannot see anything
 ggplot(accelerometer_forplot,aes(x = timemark/60, y = log(activity), color = day)) +
-  geom_point(alpha = 0.3, size = 0.5) 
+  geom_point(alpha = 0.5, size = 0.5) +
+  xlab("Timemark(min)") +
+  ylab("log2 Activity") +
+  ggtitle("24-hour activity for each day in a week")
 
-# no problem with this pic but why the data looks like that qaq
-  
+# no problem with this pic but why the data looks like that:(
 
-  
+```
+According to the fig, the activity is the lowest during the 0 to 5 o'clock and at a higher level during wake time, which is consistent with the living clock of a person. The activity level does not show distinction across each day in a week. 
+
+### Problem 3
+
+*description*
+```{r}
+head(ny_noaa)
+colSums(is.na(ny_noaa))/nrow(ny_noaa)
+```
+The dataset contains the weather station record from January 1,1981 to December 31,2021. It has `r nrow(ny_noaa)`observations and `r ncol(ny_noaa)` variables. There are some key variables such as id denotes the weather station ID, prcp denotes the precipitation, tmax and tmin denote the maximum and minimum temperature separately.
+
+There are a lot missing values in this dataset. 14.69% snowfall and 22.80% snow depth data is missing. 43.71% temperature record is missing.
+
+
+
+```{r}
+ny_noaa = separate(ny_noaa,date,c("year","month","day"))
+# I checked the value of precipitation, '22860' is that possible? 2286mm in 24 hours in NY. I prefer to believe that it is an error record.  
+# What is the meaning of reasonable units ? 
+sort(table(ny_noaa$snow),decreasing = TRUE)[1]
+```
+According to the dataset information, the variable and corresponding units are shown as below:  
+| Variable Name | Unit   |
+|:------------- | ------ |
+| prcp          | 0.1 mm |
+| snow          | mm     |
+| snwd          | mm     |
+| tmax          | 0.1 C  |
+| tmin          | 0.1 C  |
+The most frequent value for snow fall is 0, it's probably because in most of the days in a year New York doesn't have snow. 
+
+```{r}
+# stationinfo = select(ghcnd_stations(),c("id","latitude","longitude"))
+# suddenly I realized that the requirement is calculate average on stations not on years. 
+ny_noaa$tmax = as.integer(ny_noaa$tmax)
+ny_noaa$year = as.integer(ny_noaa$year)
+ny_noaa %>%
+  group_by(year,month) %>%
+  summarise(mean_tmax = mean(tmax,na.rm = TRUE)) %>%
+  ggplot(aes(x = year , y = mean_tmax/10, color = month))+
+  geom_point(data = ~ filter(.x, month %in% c("01", "07"))) +
+  geom_line(data = ~ filter(.x, month %in% c("01", "07"))) +
+  ylab("average max temperature(C)")
+  ggtitle("Average Maximum Temperature in January and in July across years")
+
+
+```
+
+The temperature in July is much higher than January, which indecates that New York is in the northern hemisphere.
+
+```{r}
+# What about the geo distribution?
+stationinfo = distinct(select(ghcnd_stations(),c("id","latitude","longitude")))
+stationRecord = ny_noaa %>%
+  group_by(id,month) %>%
+  summarise(mean_tmax = mean(tmax,na.rm = TRUE))%>%
+  filter(!is.na(mean_tmax))
+stationRecord = merge(stationRecord,stationinfo,by = "id",all = FALSE)
+yearAverage = ggplot(stationRecord,aes(x = "longitude", y = "latitude")) +
+  geom_point() +
+  ylim(c(40,44))+
+  xlim(c(-79,-72))
+
 ```
 
