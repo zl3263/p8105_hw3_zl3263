@@ -4,8 +4,8 @@ output: github_document
 date: "2022-10-12"
 ---
 
-
 *import libraries and data*
+
 ```{r}
 library(tidyverse)
 library(p8105.datasets)
@@ -15,13 +15,14 @@ data("instacart")
 data("ny_noaa")
 
 ```
+
 ### Problem 1
+
 ```{r}
 head(instacart)
 ```
 
-The dataset records the order information of instacart website. It has `r nrow(instacart)` rows and `r ncol(instacart)`columns. It has 15 variables containing information like the order id , product id, product names etc. Each row records one product in an order and relevent information both on the order and the product like the date of the order and the department of the product. 
-
+The dataset records the order information of instacart website. It has `r nrow(instacart)` rows and `r ncol(instacart)`columns. It has 15 variables containing information like the order id , product id, product names etc. Each row records one product in an order and relevent information both on the order and the product like the date of the order and the department of the product.
 
 ### Problem 2
 
@@ -33,6 +34,7 @@ accelerometer = read_csv('data/accel_data.csv')%>%
 
 
 ```
+
 ```{r}
 # what does "encode data with reasonable variable classes" mean?
 accelerometer_dailytotal = select(accelerometer,colnames(accelerometer)[1:4])
@@ -44,13 +46,15 @@ head(accelerometer_dailytotal)
 # tibble with sum generated
 
 ```
+
 ```{r}
 accelerometer_dailytotal %>%
   group_by(day)%>%
   summarize(mean_activity = mean(total_activity))
 
 ```
-The total activity shows a increasing trend in 7 days from Saturday in previous week to Friday in the next week. 
+
+The total activity shows a increasing trend in 7 days from Saturday in previous week to Friday in the next week.
 
 ```{r}
 #prepare accelerometer for plotting.
@@ -66,6 +70,7 @@ accelerometer_forplot =
 head(accelerometer_forplot)
 
 ```
+
 ```{r}
 accelerometer_forplot$day = factor(accelerometer_forplot$day, 
                                    levels = rev(c('Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday')))
@@ -79,20 +84,21 @@ ggplot(accelerometer_forplot,aes(x = timemark/60, y = log(activity), color = day
 # no problem with this pic but why the data looks like that:(
 
 ```
-According to the fig, the activity is the lowest during the 0 to 5 o'clock and at a higher level during wake time, which is consistent with the living clock of a person. The activity level does not show distinction across each day in a week. 
 
+According to the fig, the activity is the lowest during the 0 to 5 o'clock and at a higher level during wake time, which is consistent with the living clock of a person. The activity level does not show distinction across each day in a week.
 
 ### Problem 3
 
 *description*
+
 ```{r}
 head(ny_noaa)
 colSums(is.na(ny_noaa))/nrow(ny_noaa)
 ```
+
 The dataset contains the weather station record from January 1,1981 to December 31,2021. It has `r nrow(ny_noaa)`observations and `r ncol(ny_noaa)` variables. There are some key variables such as id denotes the weather station ID, prcp denotes the precipitation, tmax and tmin denote the maximum and minimum temperature separately.
 
 There are a lot missing values in this dataset. 14.69% snowfall and 22.80% snow depth data is missing. 43.71% temperature record is missing.
-
 
 ```{r}
 ny_noaa = separate(ny_noaa,date,c("year","month","day"),remove = FALSE)%>%
@@ -101,17 +107,21 @@ ny_noaa = separate(ny_noaa,date,c("year","month","day"),remove = FALSE)%>%
 # What is the meaning of reasonable units ? 
 sort(table(ny_noaa$snow),decreasing = TRUE)[1]
 ```
-According to the dataset information, the variable and corresponding units are shown as below:  
+
+According to the dataset information, the variable and corresponding units are shown as below:
+
 | Variable Name | Unit   |
-|:------------- | ------ |
+|:--------------|--------|
 | prcp          | 0.1 mm |
 | snow          | mm     |
 | snwd          | mm     |
 | tmax          | 0.1 C  |
 | tmin          | 0.1 C  |
-The most frequent value for snow fall is 0, it's probably because in most of the days in a year New York doesn't have snow. 
+
+The most frequent value for snow fall is 0, it's probably because in most of the days in a year New York doesn't have snow.
 
 *max temperature in Jan and July*
+
 ```{r}
 # stationinfo = select(ghcnd_stations(),c("id","latitude","longitude"))
 # suddenly I realized that the requirement is calculate average on stations not on years. 
@@ -130,9 +140,10 @@ ny_noaa %>%
 
 ```
 
-The temperature in July is much higher than January, which indicates that New York is in the northern hemisphere.
+The temperature in July is much higher than January, which indicates that New York is in the northern hemisphere. Outliers are not obvious in averaged data. 
 
 *making two-panel plot showing tmax vs tmin*
+
 ```{r}
 ny_noaa$tmax = as.numeric(ny_noaa$tmax)
 ny_noaa$tmin = as.numeric(ny_noaa$tmin)
@@ -140,17 +151,24 @@ heatTmax = ggplot(ny_noaa,aes(x = date, y = id, fill = tmax/10))+
   geom_tile()+
   theme(axis.ticks = element_blank(), axis.text.y = element_blank())+
   xlab("")+
-  ylab("tmax")
+  ylab("tmax")+
+  scale_fill_gradient2(limits = c(-50,45),
+                       low = "cyan",high = "red")
 
 heatTmin = ggplot(ny_noaa,aes(x = date, y = id, fill = tmin/10))+
   geom_tile()+
   theme(axis.ticks = element_blank(), axis.text.y = element_blank())+
-  ylab("tmin")
+  ylab("tmin")+
+  scale_fill_gradient2(limits = c(-50,45),
+                       low = "cyan",high = "red")
 
 heatTmax/heatTmin
 
 ```
+
+
 *making a plot showing distribution by year*
+
 ```{r}
 ny_noaa$year = as.character(ny_noaa$year)
 ny_noaa %>%
@@ -159,4 +177,3 @@ ny_noaa %>%
   geom_density(alpha = 0.1)
 
 ```
-
